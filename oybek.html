@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>6B Reyting</title>
+  <style>
+    :root{
+      --bg:#0b1216; --panel:#0f1720; --muted:#9aa6b2; --accent:#3bd2b7;
+      --gold:#f6c85f; --silver:#bfc7cc; --bronze:#c07a3f;
+      --glass: rgba(255,255,255,0.03);
+      --radius:14px;
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071018 0%, #061216 100%);color:#e6eef6}
+
+    /* Page layout */
+    .wrap{max-width:1200px;margin:18px auto;padding:18px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 40px rgba(0,0,0,0.6);height:calc(100vh - 36px);display:flex;flex-direction:column}
+
+    header{display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:14px}
+    .logo{width:58px;height:58px;border-radius:12px;background:linear-gradient(135deg,#142231,#0b1a20);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+    h1{margin:0;font-size:18px}
+    .subtitle{color:var(--muted);font-size:13px}
+
+    /* tabs like PvP screenshot (icon left, text right) */
+    .tabs{display:flex;gap:10px;margin-top:18px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.012), transparent);border-radius:12px;flex-wrap:wrap}
+    .tab{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:transparent;color:var(--muted);cursor:pointer;border:1px solid transparent;min-width:150px;justify-content:flex-start}
+    .tab .icon{font-size:20px;width:28px;text-align:center}
+    .tab .label{font-weight:700}
+    .tab:hover{background:rgba(255,255,255,0.012)}
+    .tab.active{background:linear-gradient(90deg,#0b1620,#0f1b23);color:#fff;border:1px solid rgba(255,255,255,0.03)}
+
+    main{flex:1;display:flex;gap:18px;margin-top:14px}
+
+    .left{flex:1;overflow:auto;padding:8px}
+    .right{width:420px;border-left:1px solid rgba(255,255,255,0.02);padding-left:14px}
+
+    /* leaderboard list */
+    .row{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;background:linear-gradient(90deg, rgba(255,255,255,0.01), transparent);margin-bottom:12px}
+    .rank{width:62px;height:62px;border-radius:12px;background:linear-gradient(180deg,#0b1220,#0b1520);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px}
+    .player{display:flex;align-items:center;gap:12px;flex:1}
+    .avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1f2937,#0b1220);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20;color:#fff}
+    .info{display:flex;flex-direction:column}
+    .name{font-weight:800;display:flex;align-items:center;gap:8px}
+    .meta{color:var(--muted);font-size:13px}
+    .score{min-width:90px;text-align:right;font-weight:900}
+
+    /* top colors */
+    .first{border-left:4px solid var(--gold);box-shadow:0 8px 30px rgba(246,200,95,0.06)}
+    .second{border-left:4px solid var(--silver)}
+    .third{border-left:4px solid var(--bronze)}
+
+    .crown{margin-left:8px}
+
+    /* admin modal/panel */
+    .admin-panel{background:linear-gradient(180deg,#071018,#061216);padding:12px;border-radius:12px}
+    .form-row{display:flex;gap:10px;margin-bottom:8px}
+    input,select,textarea{padding:8px;border-radius:8px;background:#07131a;border:1px solid rgba(255,255,255,0.03);color:#e6eef6}
+    textarea{resize:vertical}
+    .btn{padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,#0b1720,#102027);border:1px solid rgba(255,255,255,0.03);color:#fff;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+
+    .small{width:110px}
+    .list-small{max-height:260px;overflow:auto;margin-top:8px}
+
+    footer{color:var(--muted);font-size:13px;padding-top:12px}
+    @media(max-width:980px){.right{display:none}.wrap{margin:8px;height:calc(100vh - 16px)}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">6B</div>
+        <div>
+          <h1>Rating 6B</h1>
+          <div class="subtitle">Admin: Oybek Fayzullayev</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="btn" id="openAdminBtn">Панель администратора</div>
+      </div>
+    </header>
+
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="overall"><span class="icon">🏆</span><span class="label">Overall</span></div>
+      <div class="tab" data-tab="math"><span class="icon">📘</span><span class="label">Math</span></div>
+      <div class="tab" data-tab="english"><span class="icon">📚</span><span class="label">English</span></div>
+      <div class="tab" data-tab="mother"><span class="icon">📝</span><span class="label">Mother Tongue</span></div>
+      <div class="tab" data-tab="russian"><span class="icon">🇷🇺</span><span class="label">Russian</span></div>
+      <div class="tab" data-tab="informatics"><span class="icon">💻</span><span class="label">Informatics</span></div>
+      <div class="tab" data-tab="science"><span class="icon">🔬</span><span class="label">Science</span></div>
+      <div class="tab" data-tab="history"><span class="icon">🏺</span><span class="label">History</span></div>
+      <div class="tab" data-tab="literature"><span class="icon">📖</span><span class="label">Literature</span></div>
+      <div class="tab" data-tab="art"><span class="icon">🎨</span><span class="label">Art</span></div>
+      <div class="tab" data-tab="pe"><span class="icon">🤸</span><span class="label">PE</span></div>
+      <div class="tab" data-tab="tech"><span class="icon">🛠</span><span class="label">Technology</span></div>
+      <div class="tab" data-tab="music"><span class="icon">🎵</span><span class="label">Music</span></div>
+      <div class="tab" data-tab="upbringing"><span class="icon">🌱</span><span class="label">Upbringing</span></div>
+      <div class="tab" data-tab="admin"><span class="icon">⚙️</span><span class="label">Admin</span></div>
+    </div>
+
+    <main>
+      <div class="left">
+        <div id="board"></div>
+      </div>
+
+      <aside class="right">
+        <div class="admin-panel">
+          <div style="font-weight:800;margin-bottom:8px">Админ-панель</div>
+          <div style="color:var(--muted);font-size:13px;margin-bottom:10px">Войти как админ, чтобы редактировать список.</div>
+          <div class="form-row">
+            <input id="adminLogin" placeholder="Login" maxlength="20" />
+            <input id="adminPass" placeholder="Password" />
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:8px">
+            <div class="btn ghost" id="logoutBtn" style="display:none">Выйти</div>
+            <div class="btn" id="loginBtn">Войти</div>
+          </div>
+
+          <div id="adminControls" style="display:none">
+            <div style="font-weight:700;margin-bottom:8px">Добавить / Редактировать ученика</div>
+            <div class="form-row">
+              <input id="inpName" placeholder="Имя (max 20)" maxlength="20" />
+              <input id="inpInitials" placeholder="Инициалы" maxlength="2" style="width:80px" />
+            </div>
+
+            <!-- All subjects inputs -->
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
+              <input id="inpMath" type="number" min="0" max="100" placeholder="Math %" />
+              <input id="inpEnglish" type="number" min="0" max="100" placeholder="English %" />
+              <input id="inpMother" type="number" min="0" max="100" placeholder="Mother Tongue %" />
+              <input id="inpRussian" type="number" min="0" max="100" placeholder="Russian %" />
+              <input id="inpInformatics" type="number" min="0" max="100" placeholder="Informatics %" />
+              <input id="inpScience" type="number" min="0" max="100" placeholder="Science %" />
+              <input id="inpHistory" type="number" min="0" max="100" placeholder="History %" />
+              <input id="inpLiterature" type="number" min="0" max="100" placeholder="Literature %" />
+              <input id="inpArt" type="number" min="0" max="100" placeholder="Art %" />
+              <input id="inpPE" type="number" min="0" max="100" placeholder="PE %" />
+              <input id="inpTech" type="number" min="0" max="100" placeholder="Technology %" />
+              <input id="inpMusic" type="number" min="0" max="100" placeholder="Music %" />
+              <input id="inpUpbringing" type="number" min="0" max="100" placeholder="Upbringing %" />
+            </div>
+
+            <!-- Title input -->
+            <div style="margin-bottom:8px">
+              <input id="inpTitle" placeholder="Title (e.g. Combat Master) — optional" maxlength="40" />
+              <div style="color:var(--muted);font-size:12px;margin-top:6px">Если поле пусто, первые 3 места получат автоматические титулы.</div>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+              <div class="btn ghost" id="cancelEdit">Отмена</div>
+              <div class="btn" id="saveStudent">Сохранить</div>
+            </div>
+
+            <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
+            <div style="color:var(--muted);font-size:13px">Ro'yxat (o'zgartirish.):</div>
+            <div id="adminList" class="list-small"></div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+        <div style="color:var(--muted);font-size:13px">O'rinlar: <span style="color:var(--gold)">🥇</span> <span style="color:var(--silver)">🥈</span> <span style="color:var(--bronze)">🥉</span></div>
+      </aside>
+    </main>
+
+    <footer style="padding-top:12px">&nbsp;</footer>
+  </div>
+
+<script>
+// Data & persistence
+const SUBJECT_KEYS = ['math','english','mother','russian','informatics','science','history','literature','art','pe','tech','music','upbringing'];
+
+const DEFAULTS = [
+  {id:id(), name:'Oybek Fayzullayev', initials:'OF', math:95, english:92, mother:90, russian:88, informatics:92, science:90, history:89, literature:86, art:70, pe:92, tech:85, music:88, upbringing:90, title:''},
+  {id:id(), name:'Marlowww', initials:'MW', math:88, english:84, mother:80, russian:78, informatics:82, science:86, history:80, literature:79, art:65, pe:88, tech:72, music:75, upbringing:80, title:''},
+  {id:id(), name:'ItzRealMe', initials:'IR', math:82, english:75, mother:78, russian:74, informatics:76, science:80, history:78, literature:70, art:60, pe:72, tech:68, music:70, upbringing:75, title:''},
+  {id:id(), name:'Swight', initials:'SW', math:72, english:68, mother:70, russian:66, informatics:65, science:70, history:65, literature:60, art:55, pe:68, tech:58, music:60, upbringing:66, title:''},
+  {id:id(), name:'Kylaz', initials:'KY', math:60, english:58, mother:62, russian:60, informatics:59, science:59, history:62, literature:58, art:50, pe:60, tech:55, music:52, upbringing:58, title:''},
+];
+
+function id(){return Math.random().toString(36).slice(2,9)}
+function load(){const s=localStorage.getItem('class6a'); if(!s){localStorage.setItem('class6a', JSON.stringify(DEFAULTS)); return DEFAULTS;} try{return JSON.parse(s)}catch(e){localStorage.setItem('class6a', JSON.stringify(DEFAULTS)); return DEFAULTS}}
+function save(){localStorage.setItem('class6a', JSON.stringify(students))}
+let students = load();
+let currentTab = 'overall';
+let isAdmin = false;
+let editingId = null;
+
+// Elements
+const tabs = document.getElementById('tabs');
+const board = document.getElementById('board');
+const adminLogin = document.getElementById('adminLogin');
+const adminPass = document.getElementById('adminPass');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const adminControls = document.getElementById('adminControls');
+const adminList = document.getElementById('adminList');
+const openAdminBtn = document.getElementById('openAdminBtn');
+
+// Prefill admin inputs and auto-login when opening panel
+openAdminBtn.addEventListener('click', ()=>{
+  adminLogin.value = 'roblox2014'; adminPass.value = 'roblox2014oybek';
+  tryAdminLogin();
+  // switch to admin tab visually
+  Array.from(tabs.children).forEach(c=>c.classList.remove('active'));
+  const adminTab = Array.from(tabs.children).find(t=>t.dataset.tab==='admin');
+  if(adminTab) adminTab.classList.add('active');
+  currentTab = 'admin';
+  render();
+});
+
+// Tab behaviour
+tabs.addEventListener('click', (e)=>{
+  const t = e.target.closest('.tab'); if(!t) return;
+  Array.from(tabs.children).forEach(c=>c.classList.remove('active'));
+  t.classList.add('active');
+  currentTab = t.dataset.tab;
+  render();
+});
+
+// Average across all SUBJECT_KEYS
+function average(s){ 
+  const vals = SUBJECT_KEYS.map(k=>Number(s[k]||0));
+  const sum = vals.reduce((a,b)=>a+b,0);
+  return Math.round(sum/vals.length);
+}
+
+// automatic top-3 titles (used if student.title is empty)
+function autoTitleForIndex(idx){
+  if(idx===0) return 'Combat Grandmaster';
+  if(idx===1) return 'Combat Master';
+  if(idx===2) return 'Combat Ice';
+  return '';
+}
+
+function render(){
+  let list = students.map(s=>({...s, overall:average(s)}));
+  // sort by chosen tab
+  if(currentTab === 'overall') list.sort((a,b)=>b.overall-a.overall);
+  else if(currentTab === 'admin'){
+    // admin tab shows nothing in main board — we keep leaderboard visible (or show overall)
+    list.sort((a,b)=>b.overall-a.overall);
+  } else {
+    list.sort((a,b)=>Number(b[currentTab]||0)-Number(a[currentTab]||0));
+  }
+
+  board.innerHTML='';
+  list.forEach((s, idx)=>{
+    const row = document.createElement('div'); row.className='row';
+    if(idx===0) row.classList.add('first');
+    if(idx===1) row.classList.add('second');
+    if(idx===2) row.classList.add('third');
+
+    const rank = document.createElement('div'); rank.className='rank'; rank.textContent=(idx+1)+'.';
+    const player = document.createElement('div'); player.className='player';
+    const avatar = document.createElement('div'); avatar.className='avatar'; avatar.textContent = s.initials || initialsFromName(s.name);
+    const info = document.createElement('div'); info.className='info';
+    const name = document.createElement('div'); name.className='name'; name.textContent = s.name;
+
+    // crown for 1st
+    if(idx===0){ const cr = document.createElement('span'); cr.className='crown'; cr.textContent='👑'; name.appendChild(cr); }
+
+    // title: prefer custom title, else auto for top3 (only for first 3), else empty
+    const titleText = (s.title && s.title.trim()) ? s.title.trim() : (idx<3 ? autoTitleForIndex(idx) : '');
+    const meta = document.createElement('div'); meta.className='meta';
+    // show both overall and title if present
+    if(titleText){
+      meta.innerHTML = `<span style="font-weight:700">${titleText}</span><span style="color:var(--muted);margin-left:8px"> — ${s.overall}% overall</span>`;
+    } else {
+      meta.textContent = 'Overall: '+s.overall+'%';
+    }
+
+    info.appendChild(name); info.appendChild(meta);
+    player.appendChild(avatar); player.appendChild(info);
+
+    // score: show current tab percent or overall
+    const score = document.createElement('div'); score.className='score'; 
+    if(currentTab==='overall' || currentTab==='admin') score.textContent = s.overall+'%';
+    else score.textContent = (s[currentTab]||0) + '%';
+
+    row.appendChild(rank); row.appendChild(player); row.appendChild(score);
+
+    // click to edit when admin
+    row.style.cursor = isAdmin? 'pointer':'default';
+    row.addEventListener('click', ()=>{ if(!isAdmin) return; openEdit(s.id); });
+
+    board.appendChild(row);
+  });
+}
+
+function initialsFromName(name){ return name.split(' ').map(x=>x[0]||'').slice(0,2).join('').toUpperCase(); }
+
+// Admin login
+loginBtn.addEventListener('click', ()=>{ tryAdminLogin(); });
+logoutBtn.addEventListener('click', ()=>{ isAdmin=false; adminControls.style.display='none'; logoutBtn.style.display='none'; loginBtn.style.display='inline-block'; render(); });
+
+function tryAdminLogin(){ const l=adminLogin.value.trim(); const p=adminPass.value.trim(); if(l==='fire2013' && p==='fire2013error404'){ isAdmin=true; adminControls.style.display='block'; logoutBtn.style.display='inline-block'; loginBtn.style.display='none'; populateAdminList(); render(); } else { alert('Неверный логин/пароль'); }}
+
+// Admin controls: add/edit
+const inpName = document.getElementById('inpName');
+const inpInitials = document.getElementById('inpInitials');
+const inpTitle = document.getElementById('inpTitle');
+const saveStudent = document.getElementById('saveStudent');
+const cancelEdit = document.getElementById('cancelEdit');
+
+const subjectInputs = {
+  math: document.getElementById('inpMath'),
+  english: document.getElementById('inpEnglish'),
+  mother: document.getElementById('inpMother'),
+  russian: document.getElementById('inpRussian'),
+  informatics: document.getElementById('inpInformatics'),
+  science: document.getElementById('inpScience'),
+  history: document.getElementById('inpHistory'),
+  literature: document.getElementById('inpLiterature'),
+  art: document.getElementById('inpArt'),
+  pe: document.getElementById('inpPE'),
+  tech: document.getElementById('inpTech'),
+  music: document.getElementById('inpMusic'),
+  upbringing: document.getElementById('inpUpbringing'),
+};
+
+saveStudent.addEventListener('click', ()=>{
+  const name = inpName.value.trim(); if(!name){ alert('Введите имя'); return; }
+  const initials = (document.getElementById('inpInitials').value.trim()||initialsFromName(name)).toUpperCase().slice(0,2);
+  const title = (inpTitle.value||'').trim();
+
+  // collect subjects
+  const subjVals = {};
+  SUBJECT_KEYS.forEach(k=>{
+    const v = clamp(Number(subjectInputs[k].value),0,100)||0;
+    subjVals[k] = v;
+  });
+
+  if(editingId){ const idx = students.findIndex(x=>x.id===editingId); if(idx>-1){ students[idx] = {...students[idx], name, initials, ...subjVals, title}; }}
+  else { students.push({id:id(),name,initials,...subjVals,title}); }
+  save(); clearEdit(); populateAdminList(); render();
+});
+
+cancelEdit.addEventListener('click', ()=>{ clearEdit(); });
+
+function openEdit(id){ editingId = id; const s = students.find(x=>x.id===id); if(!s) return; inpName.value=s.name; document.getElementById('inpInitials').value=s.initials||''; inpTitle.value=s.title||''; SUBJECT_KEYS.forEach(k=>{ subjectInputs[k].value = s[k]||0; }); }
+function clearEdit(){ editingId = null; inpName.value=''; document.getElementById('inpInitials').value=''; inpTitle.value=''; SUBJECT_KEYS.forEach(k=>{ subjectInputs[k].value=''; }); }
+
+function populateAdminList(){ adminList.innerHTML=''; students.forEach(s=>{
+  const el = document.createElement('div'); el.style.padding='8px'; el.style.borderBottom='1px solid rgba(255,255,255,0.02)'; el.style.display='flex'; el.style.justifyContent='space-between';
+  el.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-weight:700">${s.initials||initialsFromName(s.name)}</div><div style="line-height:1"><div style="font-weight:700">${s.name}</div><div style="color:var(--muted);font-size:12px">${s.title?('Title: '+s.title+' — '):''}avg ${average(s)}% — ${SUBJECT_KEYS.map(k=>k.charAt(0).toUpperCase()+k.slice(1)+':'+(s[k]||0)+'%').join(' ')}</div></div></div><div style="display:flex;gap:8px"><button class="btn ghost" data-id="${s.id}" data-action="edit">Ред.</button><button class="btn ghost" data-id="${s.id}" data-action="del">Удалить</button></div>`;
+  adminList.appendChild(el);
+});
+  adminList.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click',(e)=>{
+      const id = b.dataset.id; const action = b.dataset.action; if(action==='edit'){ openEdit(id); }
+      if(action==='del'){ if(confirm('Удалить ученика?')){ students = students.filter(x=>x.id!==id); save(); populateAdminList(); render(); } }
+    });
+  });
+}
+
+function clamp(v,a,b){ if(isNaN(v)) return 0; return Math.max(a,Math.min(b,v)); }
+
+// expose quick reset
+window.__class6b = {reset(){ localStorage.removeItem('class6a'); location.reload() }}
+
+// initial render
+render();
+
+</script>
+</body>
+</html>
